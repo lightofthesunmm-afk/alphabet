@@ -493,6 +493,7 @@
         let nextRoundTimer = null;
         let wrongAnswerTimer = null;
         let particles = [];
+        let audioContext = null;
 
         alphabet.forEach((letter) => {
             const gum = document.createElement("button");
@@ -627,6 +628,7 @@
                 score += 10;
                 scoreDisplay.textContent = score;
                 gum.classList.add("correct");
+                playVictorySound();
                 triggerFireworks(gum);
                 setStatus(`أحسنت! ${currentAnimal.name} تبدأ بالحرف ${currentAnimal.letter}.`, "success");
                 nextRoundTimer = window.setTimeout(nextRound, 1300);
@@ -649,6 +651,36 @@
             lastLetter = "";
             scoreDisplay.textContent = score;
             nextRound();
+        }
+
+        // نغمة قصيرة مولّدة محلياً، فلا تحتاج اللعبة إلى ملفات صوتية خارجية.
+        function playVictorySound() {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                if (!audioContext) audioContext = new AudioContextClass();
+                if (audioContext.state === "suspended") audioContext.resume();
+
+                const notes = [523.25, 659.25, 783.99, 1046.5];
+                const startTime = audioContext.currentTime;
+                notes.forEach((frequency, index) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    const noteStart = startTime + index * 0.09;
+                    oscillator.type = "sine";
+                    oscillator.frequency.setValueAtTime(frequency, noteStart);
+                    gain.gain.setValueAtTime(0.0001, noteStart);
+                    gain.gain.exponentialRampToValueAtTime(0.18, noteStart + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.25);
+                    oscillator.connect(gain);
+                    gain.connect(audioContext.destination);
+                    oscillator.start(noteStart);
+                    oscillator.stop(noteStart + 0.27);
+                });
+            } catch (error) {
+                // اللعبة تستمر بصرياً حتى في المتصفحات التي تمنع Web Audio API.
+                console.debug("Victory sound unavailable", error);
+            }
         }
 
         // Pointer Events توحد دعم الفأرة والقلم واللمس، وتمنع فقدان السحب خارج الكرة.
