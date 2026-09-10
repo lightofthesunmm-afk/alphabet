@@ -3,196 +3,446 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة الحروف الإنجليزية والعلكة</title>
+    <meta name="theme-color" content="#ff7b9c">
+    <title>لعبة الحروف الإنجليزية</title>
     <style>
+        :root {
+            --pink-strong: #c51162;
+            --pink-bright: #ff4f87;
+            --purple: #663399;
+            --ink: #2d2430;
+            --white: #ffffff;
+            --success: #16854c;
+            --danger: #b42318;
+            --page-padding: clamp(12px, 3vw, 28px);
+        }
+
         * {
             box-sizing: border-box;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        html,
         body {
+            min-height: 100%;
+        }
+
+        body {
+            position: relative;
+            min-height: 100dvh;
             margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             align-items: center;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.48), transparent 28%),
+                linear-gradient(135deg, #ff9a9e 0%, #fad0c4 54%, #fbc2eb 100%);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* لوحة المعلومات والنقاط */
+        button {
+            font: inherit;
+        }
+
+        button:focus-visible,
+        .ball:focus-visible {
+            outline: 4px solid #ffe66d;
+            outline-offset: 4px;
+        }
+
+        #fireworks-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
         .header {
-            margin-top: 15px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+            width: min(100%, 760px);
+            padding: 16px var(--page-padding) 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--white);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
         }
 
-        /* منطقة عرض الحيوان والسؤال */
+        .title {
+            margin: 0;
+            font-size: clamp(20px, 4vw, 30px);
+            line-height: 1.2;
+        }
+
+        .score {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 42px;
+            padding: 7px 14px;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 999px;
+            background: rgba(111, 38, 74, 0.34);
+            font-size: clamp(17px, 3vw, 22px);
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .score-value {
+            min-width: 2ch;
+            text-align: center;
+            direction: ltr;
+        }
+
+        .restart-button {
+            min-height: 42px;
+            padding: 7px 14px;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 999px;
+            color: var(--white);
+            background: rgba(111, 38, 74, 0.34);
+            cursor: pointer;
+            font-weight: 700;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .restart-button:hover {
+            background: rgba(111, 38, 74, 0.58);
+            transform: translateY(-1px);
+        }
+
         .game-area {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 760px);
+            min-height: 0;
+            flex: 1;
+            padding: 10px var(--page-padding) 14px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex-grow: 1;
+            gap: clamp(12px, 2.5vh, 24px);
+        }
+
+        .message {
+            width: min(100%, 620px);
+            margin: 0;
+            padding: 10px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.42);
+            border-radius: 18px;
+            color: var(--white);
+            background: rgba(45, 36, 48, 0.46);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+            font-size: clamp(16px, 2.5vw, 21px);
+            font-weight: 700;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .message.success {
+            background: rgba(22, 133, 76, 0.88);
+        }
+
+        .message.error {
+            background: rgba(180, 35, 24, 0.82);
         }
 
         .animal-card {
-            background: white;
-            padding: 20px 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: min(100%, 410px);
+            padding: clamp(18px, 4vw, 30px) 24px;
+            border: 3px solid rgba(255, 255, 255, 0.76);
+            border-radius: 26px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
             text-align: center;
-            margin-bottom: 20px;
+            animation: bounceIn 0.5s ease;
+        }
+
+        .animal-card.round-update {
             animation: bounceIn 0.5s ease;
         }
 
         .animal-emoji {
-            font-size: 80px;
-            margin-bottom: 10px;
+            min-height: 1.2em;
+            margin-bottom: 6px;
+            font-size: clamp(64px, 15vw, 96px);
+            line-height: 1.1;
         }
 
         .animal-name {
-            font-size: 28px;
-            color: #333;
-            font-weight: bold;
+            direction: ltr;
+            color: #332c38;
+            font-size: clamp(26px, 6vw, 38px);
+            font-weight: 900;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
         }
 
-        /* الكرة التي يسحبها الطفل */
-        .ball {
-            width: 50px;
-            height: 50px;
-            background: radial-gradient(circle at 30% 30%, #ff5252, #b71c1c);
-            border-radius: 50%;
-            cursor: grab;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            position: absolute;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 20px;
-            transition: transform 0.1s;
-        }
-        .ball:active {
-            cursor: grabbing;
-            transform: scale(1.1);
+        .animal-hint {
+            margin: 10px 0 0;
+            color: #695d6b;
+            font-size: 15px;
         }
 
-        /* شريط الحروف (العلكة) في سطر واحد */
+        /* الكرة قابلة للسحب بالفأرة واللمس عبر Pointer Events. */
+        .ball {
+            position: fixed;
+            z-index: 5;
+            left: 0;
+            top: 0;
+            width: 58px;
+            height: 58px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            color: var(--white);
+            background: radial-gradient(circle at 30% 30%, #ff6868, #b71c1c 72%);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            cursor: grab;
+            font-size: 25px;
+            line-height: 1;
+            touch-action: none;
+            transition: transform 0.12s ease, filter 0.2s ease;
+        }
+
+        .ball:hover {
+            filter: brightness(1.08);
+        }
+
+        .ball.dragging {
+            cursor: grabbing;
+            transform: scale(1.14);
+        }
+
+        .ball:disabled {
+            cursor: default;
+            filter: grayscale(0.15);
+        }
+
+        .alphabet-panel {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            padding: 12px 0 max(14px, env(safe-area-inset-bottom));
+            border-top: 1px solid rgba(255, 255, 255, 0.42);
+            background: rgba(255, 255, 255, 0.26);
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(7px);
+        }
+
+        .alphabet-label {
+            margin: 0 0 9px;
+            color: #603b54;
+            font-size: 15px;
+            font-weight: 800;
+            text-align: center;
+        }
+
         .gum-container {
             width: 100%;
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(5px);
-            padding: 20px 10px;
+            padding: 2px max(12px, var(--page-padding)) 8px;
             display: flex;
-            overflow-x: auto;
-            gap: 10px;
-            justify-content: flex-start;
             align-items: center;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
-            white-space: nowrap;
+            gap: 10px;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            direction: ltr;
+            scrollbar-width: thin;
+            scrollbar-color: var(--pink-strong) transparent;
+            touch-action: pan-x;
         }
 
-        /* شكل العلكة لكل حرف */
+        .gum-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .gum-container::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: var(--pink-strong);
+        }
+
         .gum-item {
-            min-width: 55px;
-            height: 55px;
-            background: radial-gradient(circle at 30% 30%, #ff80ab, #c51162);
-            border-radius: 50% 50% 45% 45%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            box-shadow: inset -4px -4px 10px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
             position: relative;
-            flex-shrink: 0;
-            transition: transform 0.2s, background 0.2s;
+            flex: 0 0 56px;
+            width: 56px;
+            height: 56px;
+            padding: 0;
+            border: 0;
+            border-radius: 50% 50% 45% 45%;
+            color: var(--white);
+            background: radial-gradient(circle at 30% 30%, #ff80ab, var(--pink-strong));
+            box-shadow: inset -4px -4px 10px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 56px;
+            text-align: center;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
         }
 
         .gum-item::after {
-            content: '';
             position: absolute;
+            right: 50%;
             bottom: -5px;
             width: 10px;
             height: 8px;
-            background: #c51162;
             border-radius: 0 0 5px 5px;
+            background: var(--pink-strong);
+            content: "";
+            transform: translateX(50%);
+        }
+
+        .gum-item:hover,
+        .gum-item:focus-visible {
+            transform: translateY(-4px) scale(1.05);
         }
 
         .gum-item.highlight {
-            animation: pulseGum 0.5s infinite alternate;
+            animation: pulseGum 0.55s infinite alternate;
+        }
+
+        .gum-item.correct {
+            background: radial-gradient(circle at 30% 30%, #66e59a, #16854c);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.75), 0 5px 16px rgba(22, 133, 76, 0.46);
+        }
+
+        .gum-item.correct::after {
+            background: #16854c;
+        }
+
+        .gum-item.wrong {
+            background: radial-gradient(circle at 30% 30%, #ff8f8f, #b42318);
+            animation: shake 0.35s ease;
+        }
+
+        .gum-item.wrong::after {
+            background: #b42318;
         }
 
         @keyframes pulseGum {
             from { transform: scale(1); }
-            to { transform: scale(1.15); background: radial-gradient(circle at 30% 30%, #ff4081, #ad1457); }
+            to { transform: scale(1.13); }
         }
 
         @keyframes bounceIn {
-            0% { transform: scale(0); opacity: 0; }
-            60% { transform: scale(1.1); opacity: 1; }
+            0% { opacity: 0; transform: scale(0.72); }
+            65% { opacity: 1; transform: scale(1.05); }
             100% { transform: scale(1); }
         }
 
-        /* رسالة التوجيه والفوز */
-        .message {
-            position: absolute;
-            top: 20%;
-            font-size: 22px;
-            color: #fff;
-            background: rgba(0,0,0,0.4);
-            padding: 10px 20px;
-            border-radius: 30px;
-            pointer-events: none;
-            text-align: center;
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            30% { transform: translateX(-6px); }
+            70% { transform: translateX(6px); }
         }
 
-        /* كانفاس الألعاب النارية */
-        #fireworks-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
+        @media (max-width: 520px) {
+            .header {
+                padding-top: 10px;
+                flex-wrap: wrap;
+            }
+
+            .title {
+                flex: 1 1 100%;
+                text-align: center;
+            }
+
+            .score,
+            .restart-button {
+                flex: 1 1 0;
+                justify-content: center;
+            }
+
+            .game-area {
+                padding-top: 5px;
+                gap: 10px;
+            }
+
+            .animal-card {
+                padding-block: 15px;
+            }
+
+            .animal-hint {
+                margin-top: 4px;
+            }
+
+            .ball {
+                width: 52px;
+                height: 52px;
+                font-size: 22px;
+            }
+
+            .gum-item {
+                flex-basis: 50px;
+                width: 50px;
+                height: 50px;
+                font-size: 21px;
+                line-height: 50px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
 <body>
+    <canvas id="fireworks-canvas" aria-hidden="true"></canvas>
 
-    <canvas id="fireworks-canvas"></canvas>
-
-    <div class="header">⭐ النقاط: <span id="score">0</span></div>
-
-    <div class="message" id="instruction">اسحب الكرة وضعها على الحرف المنازل لاسم الحيوان!</div>
-
-    <div class="game-area">
-        <div class="animal-card" id="animalCard">
-            <div class="animal-emoji" id="animalEmoji">🐶</div>
-            <div class="animal-name" id="animalName">Dog</div>
+    <header class="header">
+        <h1 class="title">لعبة الحروف الإنجليزية</h1>
+        <div class="score" aria-label="النقاط الحالية">
+            <span aria-hidden="true">⭐</span>
+            <span>النقاط:</span>
+            <span class="score-value" id="score" aria-live="polite">0</span>
         </div>
-    </div>
+        <button class="restart-button" id="restartButton" type="button">إعادة اللعبة</button>
+    </header>
 
-    <!-- الكرة القابلة للسحب -->
-    <div class="ball" id="draggableBall" style="left: 50%; top: 50%;">⚽</div>
+    <main class="game-area">
+        <p class="message" id="instruction" role="status" aria-live="polite">
+            اسحب الكرة وضعها على الحرف الأول المناسب لاسم الحيوان!
+        </p>
 
-    <!-- شريط العلكة (الحروف) -->
-    <div class="gum-container" id="gumContainer">
-        <!-- سيتم تعبئة الحروف تلقائياً عبر JavaScript -->
-    </div>
+        <section class="animal-card" id="animalCard" aria-labelledby="animalName">
+            <div class="animal-emoji" id="animalEmoji" role="img" aria-label="حيوان">🐶</div>
+            <div class="animal-name" id="animalName" lang="en">Dog</div>
+            <p class="animal-hint">ما الحرف الذي يبدأ به هذا الاسم؟</p>
+        </section>
+    </main>
+
+    <button
+        class="ball"
+        id="draggableBall"
+        type="button"
+        aria-label="كرة قابلة للسحب. اسحبها إلى الحرف الصحيح، أو استخدم أزرار الحروف أدناه."
+        aria-describedby="instruction"
+    >⚽</button>
+
+    <section class="alphabet-panel" aria-labelledby="alphabetLabel">
+        <p class="alphabet-label" id="alphabetLabel">يمكنك أيضاً الضغط على الحرف مباشرة</p>
+        <div class="gum-container" id="gumContainer" aria-label="الحروف الإنجليزية"></div>
+    </section>
 
     <script>
-        // قائمة الحيوانات مع الحرف الأول
+        "use strict";
+
+        // كلمات حقيقية لكل حرف حتى يتعلم الطفل الحروف مع أمثلة حيوانات واضحة.
         const animals = [
             { name: "Ant", emoji: "🐜", letter: "A" },
             { name: "Bear", emoji: "🐻", letter: "B" },
@@ -207,176 +457,268 @@
             { name: "Kangaroo", emoji: "🦘", letter: "K" },
             { name: "Lion", emoji: "🦁", letter: "L" },
             { name: "Monkey", emoji: "🐵", letter: "M" },
-            { name: "Nest", emoji: "🐦", letter: "N" }, // بديل لسهولة الرمز
+            { name: "Newt", emoji: "🦎", letter: "N" },
             { name: "Owl", emoji: "🦉", letter: "O" },
             { name: "Penguin", emoji: "🐧", letter: "P" },
-            { name: "Queen", emoji: "👸", letter: "Q" },
+            { name: "Quail", emoji: "🐦", letter: "Q" },
             { name: "Rabbit", emoji: "🐰", letter: "R" },
             { name: "Snake", emoji: "🐍", letter: "S" },
             { name: "Tiger", emoji: "🐯", letter: "T" },
-            { name: "Umbrella", emoji: "☂️", letter: "U" },
+            { name: "Uakari", emoji: "🐒", letter: "U" },
             { name: "Vulture", emoji: "🦅", letter: "V" },
             { name: "Whale", emoji: "🐳", letter: "W" },
-            { name: "X-ray", emoji: "🦴", letter: "X" },
+            { name: "Xerus", emoji: "🐿️", letter: "X" },
             { name: "Yak", emoji: "🐂", letter: "Y" },
             { name: "Zebra", emoji: "🦓", letter: "Z" }
         ];
 
-        let score = 0;
-        let currentAnimal = {};
-        
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
         const gumContainer = document.getElementById("gumContainer");
         const ball = document.getElementById("draggableBall");
+        const animalCard = document.getElementById("animalCard");
         const animalEmoji = document.getElementById("animalEmoji");
         const animalName = document.getElementById("animalName");
         const scoreDisplay = document.getElementById("score");
+        const instruction = document.getElementById("instruction");
+        const restartButton = document.getElementById("restartButton");
 
-        let initialBallPos = { x: window.innerWidth / 2 - 25, y: window.innerHeight / 2 };
+        let score = 0;
+        let round = 0;
+        let currentAnimal = null;
+        let lastLetter = "";
+        let isDragging = false;
+        let isRoundLocked = false;
+        let activePointerId = null;
+        let dragOffset = { x: 0, y: 0 };
+        let nextRoundTimer = null;
+        let wrongAnswerTimer = null;
+        let particles = [];
 
-        // بناء شريط الحروف (العلكة)
-        alphabet.forEach(letter => {
-            const gum = document.createElement("div");
+        alphabet.forEach((letter) => {
+            const gum = document.createElement("button");
             gum.className = "gum-item";
-            gum.innerText = letter;
+            gum.type = "button";
+            gum.textContent = letter;
             gum.dataset.letter = letter;
+            gum.setAttribute("aria-label", `الحرف ${letter}`);
             gumContainer.appendChild(gum);
+            gum.addEventListener("click", () => handleAnswer(letter, gum));
         });
 
+        const gumItems = [...document.querySelectorAll(".gum-item")];
+
+        function setStatus(message, state = "") {
+            instruction.textContent = message;
+            instruction.classList.remove("success", "error");
+            if (state) instruction.classList.add(state);
+        }
+
+        function clearGumStates() {
+            gumItems.forEach((gum) => gum.classList.remove("highlight", "correct", "wrong"));
+        }
+
+        function chooseAnimal() {
+            let candidate;
+            do {
+                candidate = animals[Math.floor(Math.random() * animals.length)];
+            } while (animals.length > 1 && candidate.letter === lastLetter);
+            return candidate;
+        }
+
         function nextRound() {
-            // اختيار حيوان عشوائي
-            currentAnimal = animals[Math.floor(Math.random() * animals.length)];
-            animalEmoji.innerText = currentAnimal.emoji;
-            animalName.innerText = currentAnimal.name;
+            window.clearTimeout(nextRoundTimer);
+            window.clearTimeout(wrongAnswerTimer);
+            isRoundLocked = false;
+            clearGumStates();
+            currentAnimal = chooseAnimal();
+            lastLetter = currentAnimal.letter;
+            round += 1;
+            animalEmoji.textContent = currentAnimal.emoji;
+            animalEmoji.setAttribute("aria-label", currentAnimal.name);
+            animalName.textContent = currentAnimal.name;
+            animalCard.classList.remove("round-update");
+            // إعادة تشغيل حركة البطاقة من دون الاعتماد على innerHTML.
+            void animalCard.offsetWidth;
+            animalCard.classList.add("round-update");
             resetBallPosition();
+            setStatus(`الجولة ${round}: اسحب الكرة إلى الحرف الأول في كلمة ${currentAnimal.name}.`);
         }
 
         function resetBallPosition() {
-            ball.style.left = `${window.innerWidth / 2 - 25}px`;
-            ball.style.top = `${window.innerHeight * 0.55}px`;
+            const ballSize = ball.getBoundingClientRect().width || 58;
+            const alphabetTop = gumContainer.getBoundingClientRect().top;
+            const maxTop = Math.max(12, alphabetTop - ballSize - 18);
+            const desiredTop = Math.min(window.innerHeight * 0.56, maxTop);
+            const left = Math.max(12, (window.innerWidth - ballSize) / 2);
+            ball.style.left = `${Math.min(left, window.innerWidth - ballSize - 12)}px`;
+            ball.style.top = `${Math.max(12, desiredTop)}px`;
         }
 
-        // آلية السحب والإفلات (Drag & Drop / Touch Support)
-        let isDragging = false;
-        let startX, startY;
+        function moveBall(clientX, clientY) {
+            const rect = ball.getBoundingClientRect();
+            const maxLeft = Math.max(12, window.innerWidth - rect.width - 12);
+            const maxTop = Math.max(12, window.innerHeight - rect.height - 12);
+            const left = Math.min(maxLeft, Math.max(12, clientX - dragOffset.x));
+            const top = Math.min(maxTop, Math.max(12, clientY - dragOffset.y));
+            ball.style.left = `${left}px`;
+            ball.style.top = `${top}px`;
+        }
 
-        ball.addEventListener("mousedown", startDrag);
-        ball.addEventListener("touchstart", startDrag, { passive: false });
-
-        document.addEventListener("mousemove", drag);
-        document.addEventListener("touchmove", drag, { passive: false });
-
-        document.addEventListener("mouseup", endDrag);
-        document.addEventListener("touchend", endDrag);
-
-        function startDrag(e) {
+        function startDrag(event) {
+            if (isRoundLocked || (event.button !== undefined && event.button !== 0)) return;
             isDragging = true;
-            let clientX = e.clientX || e.touches[0].clientX;
-            let clientY = e.clientY || e.touches[0].clientY;
-            startX = clientX - ball.offsetLeft;
-            startY = clientY - ball.offsetTop;
-            e.preventDefault();
+            activePointerId = event.pointerId;
+            const rect = ball.getBoundingClientRect();
+            dragOffset = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+            ball.classList.add("dragging");
+            ball.setPointerCapture?.(event.pointerId);
+            setStatus("أفلت الكرة فوق الحرف الذي تعتقد أنه صحيح.");
+            event.preventDefault();
         }
 
-        function drag(e) {
-            if (!isDragging) return;
-            let clientX = e.clientX || e.touches[0].clientX;
-            let clientY = e.clientY || e.touches[0].clientY;
-            
-            ball.style.left = `${clientX - startX}px`;
-            ball.style.top = `${clientY - startY}px`;
-            e.preventDefault();
+        function drag(event) {
+            if (!isDragging || event.pointerId !== activePointerId) return;
+            moveBall(event.clientX, event.clientY);
+            event.preventDefault();
         }
 
-        function endDrag(e) {
-            if (!isDragging) return;
+        function endDrag(event) {
+            if (!isDragging || event.pointerId !== activePointerId) return;
             isDragging = false;
+            ball.classList.remove("dragging");
+            ball.releasePointerCapture?.(event.pointerId);
+            activePointerId = null;
+            evaluateDrop();
+        }
 
-            // التحقق من الحرف المستهدف تحت الكرة
-            let ballRect = ball.getBoundingClientRect();
-            let ballCenterX = ballRect.left + ballRect.width / 2;
-            let ballCenterY = ballRect.top + ballRect.height / 2;
+        function cancelDrag(event) {
+            if (!isDragging || event.pointerId !== activePointerId) return;
+            isDragging = false;
+            ball.classList.remove("dragging");
+            activePointerId = null;
+            resetBallPosition();
+        }
 
-            let targetGum = null;
-            document.querySelectorAll(".gum-item").forEach(gum => {
-                let rect = gum.getBoundingClientRect();
-                if (
-                    ballCenterX >= rect.left && ballCenterX <= rect.right &&
-                    ballCenterY >= rect.top && ballCenterY <= rect.bottom
-                ) {
-                    targetGum = gum;
-                }
+        function findGumAtBallCenter() {
+            const ballRect = ball.getBoundingClientRect();
+            const centerX = ballRect.left + ballRect.width / 2;
+            const centerY = ballRect.top + ballRect.height / 2;
+            return gumItems.find((gum) => {
+                const rect = gum.getBoundingClientRect();
+                return centerX >= rect.left && centerX <= rect.right && centerY >= rect.top && centerY <= rect.bottom;
             });
+        }
 
+        function evaluateDrop() {
+            const targetGum = findGumAtBallCenter();
             if (targetGum) {
-                let selectedLetter = targetGum.dataset.letter;
-                if (selectedLetter === currentAnimal.letter) {
-                    // إجابة صحيحة!
-                    score += 10;
-                    scoreDisplay.innerText = score;
-                    triggerFireworks(targetGum);
-                    setTimeout(() => {
-                        nextRound();
-                    }, 1500);
-                } else {
-                    // إجابة خاطئة
-                    resetBallPosition();
-                }
+                handleAnswer(targetGum.dataset.letter, targetGum);
             } else {
+                setStatus("حاول إسقاط الكرة فوق أحد الحروف.", "error");
                 resetBallPosition();
             }
         }
 
-        // محاكاة الألعاب النارية البسيطة خارج الحرف الصحيح
+        function handleAnswer(selectedLetter, gum) {
+            if (isRoundLocked || !currentAnimal) return;
+            clearGumStates();
+            if (selectedLetter === currentAnimal.letter) {
+                isRoundLocked = true;
+                score += 10;
+                scoreDisplay.textContent = score;
+                gum.classList.add("correct");
+                triggerFireworks(gum);
+                setStatus(`أحسنت! ${currentAnimal.name} تبدأ بالحرف ${currentAnimal.letter}.`, "success");
+                nextRoundTimer = window.setTimeout(nextRound, 1300);
+            } else {
+                gum.classList.add("wrong");
+                setStatus(`ليس الحرف ${selectedLetter}. جرّب مرة أخرى!`, "error");
+                wrongAnswerTimer = window.setTimeout(() => {
+                    gum.classList.remove("wrong");
+                    resetBallPosition();
+                    setStatus(`ابحث عن الحرف الأول في كلمة ${currentAnimal.name}.`);
+                }, 650);
+            }
+        }
+
+        function resetGame() {
+            window.clearTimeout(nextRoundTimer);
+            window.clearTimeout(wrongAnswerTimer);
+            score = 0;
+            round = 0;
+            lastLetter = "";
+            scoreDisplay.textContent = score;
+            nextRound();
+        }
+
+        // Pointer Events توحد دعم الفأرة والقلم واللمس، وتمنع فقدان السحب خارج الكرة.
+        ball.addEventListener("pointerdown", startDrag);
+        ball.addEventListener("pointermove", drag);
+        ball.addEventListener("pointerup", endDrag);
+        ball.addEventListener("pointercancel", cancelDrag);
+        ball.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setStatus("استخدم أزرار الحروف أسفل الشاشة للإجابة باللمس أو لوحة المفاتيح.");
+                gumItems[0].focus();
+            }
+        });
+        restartButton.addEventListener("click", resetGame);
+        window.addEventListener("resize", resetBallPosition);
+
+        // رسم ألعاب نارية خفيفة عند الإجابة الصحيحة، مع إزالة الجسيمات بأمان.
         const canvas = document.getElementById("fireworks-canvas");
         const ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        let pixelRatio = 1;
 
-        let particles = [];
+        function resizeCanvas() {
+            pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.floor(window.innerWidth * pixelRatio);
+            canvas.height = Math.floor(window.innerHeight * pixelRatio);
+            ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        }
 
         function triggerFireworks(element) {
-            let rect = element.getBoundingClientRect();
-            let x = rect.left + rect.width / 2;
-            let y = rect.top;
-
-            for (let i = 0; i < 50; i++) {
+            const rect = element.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top;
+            for (let index = 0; index < 48; index += 1) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
                 particles.push({
-                    x: x,
-                    y: y,
-                    angle: Math.random() * Math.PI * 2,
-                    speed: Math.random() * 6 + 2,
-                    radius: Math.random() * 4 + 2,
-                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    x,
+                    y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: Math.random() * 3 + 2,
+                    color: `hsl(${Math.random() * 360}, 100%, 58%)`,
                     life: 60
                 });
             }
         }
 
         function animateFireworks() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach((p, index) => {
-                p.x += Math.cos(p.angle) * p.speed;
-                p.y += Math.sin(p.angle) * p.speed;
-                p.life--;
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            for (let index = particles.length - 1; index >= 0; index -= 1) {
+                const particle = particles[index];
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vy += 0.08;
+                particle.life -= 1;
+                ctx.globalAlpha = Math.max(0, particle.life / 60);
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
+                ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                ctx.fillStyle = particle.color;
                 ctx.fill();
-                if (p.life <= 0) {
-                    particles.splice(index, 1);
-                }
-            });
-            requestAnimationFrame(animateFireworks);
+                if (particle.life <= 0) particles.splice(index, 1);
+            }
+            ctx.globalAlpha = 1;
+            window.requestAnimationFrame(animateFireworks);
         }
 
+        resizeCanvas();
+        window.addEventListener("resize", resizeCanvas);
         animateFireworks();
-        window.addEventListener("resize", () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        // بدء اللعبة لأول مرة
         nextRound();
     </script>
 </body>
